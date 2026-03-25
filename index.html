@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+    <!-- PWA / Theme -->
+    <meta name="theme-color" content="#0071E3" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#1C1C1E"  media="(prefers-color-scheme: dark)" />
+    <meta name="description" content="Interface Linguistics — Learn to communicate with AI at the precision your goals require." />
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- iOS PWA -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="IL" />
+    <link rel="apple-touch-icon" href="/icon.svg" />
+
+    <!-- Prevent tap callout / text selection on nav items -->
+    <style>
+      * { -webkit-tap-highlight-color: transparent; }
+    </style>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+
+    <title>Interface Linguistics</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
