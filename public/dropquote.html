@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>BilinCo — Instant Quote</title>
+<meta name="description" content="Drop files for an instant certified-translation quote, or describe your assignment to book a court-certified Mandarin/Cantonese interpreter. Files are parsed locally — never uploaded.">
+<meta property="og:title" content="BilinCo — Instant Quote & Booking">
+<meta property="og:description" content="Instant interpretation booking and certified-translation quotes. Documents parsed locally — never uploaded.">
+<meta name="theme-color" content="#0a0a0a">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='46' fill='%230a0a0a' stroke='%23C9A961' stroke-width='4'/%3E%3Ctext x='50' y='66' font-size='48' text-anchor='middle' fill='%23C9A961' font-family='Georgia,serif'%3EB%3C/text%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#0a0a0a; --panel:#141414; --panel2:#1b1b1b; --line:#2a2a2a;
+  --gold:#C9A961; --gold-hi:#E3C688; --gold-dim:#8a7440;
+  --ink:#e8e4da; --dim:#8a8a8a; --faint:#555;
+  --serif:'Didot','Bodoni MT','Playfair Display',Georgia,'Times New Roman',serif;
+  --mono:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);font-family:var(--serif);min-height:100vh;-webkit-font-smoothing:antialiased}
+.wrap{max-width:860px;margin:0 auto;padding:0 20px 80px}
+
+/* ---------- top bar ---------- */
+.top{display:flex;justify-content:space-between;align-items:center;padding:26px 4px 10px}
+.brand{font-size:22px;letter-spacing:.02em;color:#f2efe7}
+.brand b{font-weight:400}
+.localbadge{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;color:var(--faint);display:flex;align-items:center;gap:8px;text-transform:lowercase}
+.localbadge .dot{width:6px;height:6px;border-radius:50%;background:var(--gold);box-shadow:0 0 6px rgba(201,169,97,.6)}
+
+/* ---------- hero drop zone ---------- */
+.hero{padding:34px 0 8px;text-align:center}
+.dropzone{border:1px dashed transparent;border-radius:18px;padding:44px 20px 40px;cursor:pointer;transition:border-color .25s, background .25s}
+.dropzone:hover,.dropzone.drag{border-color:var(--gold-dim);background:rgba(201,169,97,.03)}
+.dropzone.drag{border-style:solid}
+.lockring{width:128px;height:128px;margin:0 auto 30px;border:1px solid #3a3a3a;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:border-color .25s}
+.dropzone:hover .lockring,.dropzone.drag .lockring{border-color:var(--gold-dim)}
+.lockring svg{width:52px;height:52px}
+h1.tag{font-size:clamp(22px,4.6vw,30px);font-weight:400;color:var(--gold);letter-spacing:.01em;margin-bottom:14px}
+.sub{font-family:var(--mono);font-size:11px;letter-spacing:.28em;color:var(--dim);margin-bottom:10px}
+.sub2{font-family:var(--mono);font-size:10px;letter-spacing:.28em;color:var(--faint)}
+
+/* ---------- mode buttons ---------- */
+.modes{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:34px 0 8px}
+@media(max-width:560px){.modes{grid-template-columns:1fr}}
+.modebtn{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:24px 22px;text-align:left;cursor:pointer;transition:border-color .2s, transform .2s;color:var(--ink);font-family:var(--serif)}
+.modebtn:hover{border-color:var(--gold-dim);transform:translateY(-1px)}
+.modebtn.active{border-color:var(--gold)}
+.modebtn .k{font-family:var(--mono);font-size:9.5px;letter-spacing:.3em;color:var(--gold);display:block;margin-bottom:9px}
+.modebtn .t{font-size:19px;color:#f2efe7;display:block;margin-bottom:7px}
+.modebtn .d{font-size:13.5px;line-height:1.55;color:var(--dim);font-family:Georgia,serif}
+
+/* ---------- panels ---------- */
+.panel{display:none;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:28px;margin-top:22px;animation:rise .35s ease}
+.panel.open{display:block}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.panel h2{font-size:20px;font-weight:400;color:#f2efe7;margin-bottom:4px}
+.panel .hint{font-size:13px;color:var(--dim);font-family:Georgia,serif;margin-bottom:18px;line-height:1.55}
+textarea{width:100%;min-height:96px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;color:var(--ink);font-family:Georgia,serif;font-size:15px;line-height:1.6;padding:14px 16px;resize:vertical;outline:none;transition:border-color .2s}
+textarea:focus{border-color:var(--gold-dim)}
+textarea::placeholder{color:#5d5d5d}
+
+/* chips row */
+.chips{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0 4px}
+.chip{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:8px 12px;display:flex;align-items:center;gap:8px}
+.chip label{font-family:var(--mono);font-size:9px;letter-spacing:.2em;color:var(--faint);text-transform:uppercase}
+.chip select,.chip input{background:transparent;border:none;color:var(--gold-hi);font-family:Georgia,serif;font-size:14px;outline:none;max-width:150px}
+.chip select option{background:#1b1b1b;color:var(--ink)}
+.chip input[type=date],.chip input[type=time]{color-scheme:dark}
+
+/* file cards */
+.files{display:flex;flex-direction:column;gap:10px;margin-top:16px}
+.fcard{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:flex;justify-content:space-between;gap:14px;align-items:center;flex-wrap:wrap}
+.fcard .name{font-family:var(--mono);font-size:12px;color:var(--ink);word-break:break-all}
+.fcard .meta{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;color:var(--dim);margin-top:5px;line-height:1.7}
+.fcard .badge{font-family:var(--mono);font-size:9px;letter-spacing:.18em;padding:3px 8px;border-radius:5px;border:1px solid var(--gold-dim);color:var(--gold)}
+.fcard .badge.scan{border-color:#7a5a3a;color:#c9905e}
+.fcard .rm{background:none;border:none;color:var(--faint);cursor:pointer;font-size:16px;font-family:var(--mono)}
+.fcard .rm:hover{color:#c96a5e}
+.scanflag{font-family:var(--mono);font-size:10px;color:var(--dim);display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
+.scanflag input{accent-color:var(--gold)}
+
+/* quote block */
+.quote{margin-top:22px;border-top:1px solid var(--line);padding-top:20px;display:none}
+.quote.show{display:block}
+.qline{display:flex;justify-content:space-between;gap:16px;padding:7px 0;font-size:14.5px;color:var(--ink)}
+.qline .l{color:var(--dim);font-family:Georgia,serif}
+.qline .r{font-family:var(--mono);font-size:13.5px;color:var(--ink);white-space:nowrap}
+.qline.total{border-top:1px solid var(--line);margin-top:8px;padding-top:14px}
+.qline.total .l{color:#f2efe7;font-size:16px}
+.qline.total .r{color:var(--gold);font-size:19px}
+.qnote{font-size:12px;color:var(--faint);font-family:Georgia,serif;font-style:italic;margin-top:12px;line-height:1.6}
+.qref{font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:var(--faint);margin-top:10px}
+
+/* actions */
+.actions{display:flex;gap:12px;margin-top:20px;flex-wrap:wrap}
+.btn{flex:1;min-width:180px;text-align:center;padding:15px 20px;border-radius:10px;font-family:var(--mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;cursor:pointer;text-decoration:none;transition:filter .2s,border-color .2s;border:1px solid transparent}
+.btn.gold{background:linear-gradient(135deg,#C9A961,#b8934c);color:#0a0a0a;font-weight:600}
+.btn.gold:hover{filter:brightness(1.08)}
+.btn.ghost{background:transparent;border-color:var(--line);color:var(--dim)}
+.btn.ghost:hover{border-color:var(--gold-dim);color:var(--gold)}
+
+/* urgency + misc */
+.optrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.opt{flex:1;min-width:140px;background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:12px 14px;cursor:pointer;text-align:center;transition:border-color .2s}
+.opt:hover{border-color:var(--gold-dim)}
+.opt.sel{border-color:var(--gold)}
+.opt .ot{font-size:14px;color:var(--ink)}
+.opt .od{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;color:var(--faint);margin-top:4px}
+
+.foot{margin-top:56px;text-align:center;font-family:var(--mono);font-size:9.5px;letter-spacing:.2em;color:#4a4a4a;line-height:2.2}
+.foot a{color:var(--gold-dim);text-decoration:none}
+.parsing{font-family:var(--mono);font-size:10.5px;letter-spacing:.15em;color:var(--gold);display:none;margin-top:14px}
+.parsing.show{display:block}
+input[type=file]{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="top">
+    <div class="brand"><b>BilinCo</b></div>
+    <div class="localbadge"><span class="dot"></span><span id="byteCounter">0B · local</span></div>
+  </div>
+
+  <!-- HERO DROP ZONE (per mockup) -->
+  <div class="hero">
+    <div class="dropzone" id="dropzone" role="button" tabindex="0" aria-label="Drop files for an instant quote, or click to choose files">
+      <div class="lockring">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <rect x="5" y="10.5" width="14" height="9.5" rx="1.6" fill="#C9A961"/>
+          <path d="M8 10.5V7.5a4 4 0 0 1 8 0v3" stroke="#C9A961" stroke-width="2.2" fill="none"/>
+          <circle cx="12" cy="14.6" r="1.5" fill="#0a0a0a"/>
+          <rect x="11.3" y="15.4" width="1.4" height="2.4" rx=".7" fill="#0a0a0a"/>
+        </svg>
+      </div>
+      <h1 class="tag">Drop files for an instant quote</h1>
+      <div class="sub">PARSED LOCALLY &nbsp;·&nbsp; NEVER UPLOADED</div>
+      <div class="sub2">OR CLICK TO CHOOSE</div>
+    </div>
+    <input type="file" id="fileInput" multiple accept=".pdf,.docx,.txt,.md,.rtf,.png,.jpg,.jpeg,.webp,.tif,.tiff,.heic">
+  </div>
+
+  <!-- TWO MODE BUTTONS: interpretation left, translation right -->
+  <div class="modes">
+    <button class="modebtn" id="btnInterp">
+      <span class="k">INTERPRETATION</span>
+      <span class="t">Book an interpreter</span>
+      <span class="d">Describe the assignment in plain words — date, place, setting. Get a fee estimate and book against a live calendar.</span>
+    </button>
+    <button class="modebtn" id="btnTrans">
+      <span class="k">TRANSLATION</span>
+      <span class="t">Instant document quote</span>
+      <span class="d">Drop your documents. Pages, density, and legibility are read on your device — the files never leave it.</span>
+    </button>
+  </div>
+
+  <!-- ============ INTERPRETATION PANEL ============ -->
+  <div class="panel" id="panelInterp">
+    <h2>Book an interpreter</h2>
+    <p class="hint">Type it the way you'd say it — <em>“Deposition next Tuesday 9am in Irvine, Mandarin, full day”</em> — and the details are decoded below. Adjust anything that reads wrong.</p>
+    <textarea id="interpText" placeholder="Describe your assignment — setting, date &amp; time, city, language, full or half day…" spellcheck="false"></textarea>
+
+    <div class="chips">
+      <div class="chip"><label>Setting</label>
+        <select id="cSetting">
+          <option>Deposition</option><option>Trial</option><option>Hearing</option>
+          <option>Arbitration</option><option>Mediation</option><option>IME / Medical</option>
+          <option>EUO</option><option>Business meeting</option><option>Conference</option><option>Other</option>
+        </select>
+      </div>
+      <div class="chip"><label>Date</label><input type="date" id="cDate"></div>
+      <div class="chip"><label>Time</label><input type="time" id="cTime" value="09:00"></div>
+      <div class="chip"><label>Length</label>
+        <select id="cLength">
+          <option value="full">Full day</option>
+          <option value="half">Half day (≤3.5h)</option>
+          <option value="2h">Remote / hourly (2h min)</option>
+        </select>
+      </div>
+      <div class="chip"><label>Days</label><input type="number" id="cDays" value="1" min="1" max="30" style="width:52px"></div>
+      <div class="chip"><label>Team</label>
+        <select id="cTeam">
+          <option value="1">One interpreter</option>
+          <option value="2">Two interpreters</option>
+        </select>
+      </div>
+      <div class="chip"><label>Mode</label>
+        <select id="cMode">
+          <option value="onsite">In person</option>
+          <option value="remote">Remote</option>
+        </select>
+      </div>
+      <div class="chip"><label>Language</label>
+        <select id="cLang">
+          <option>Mandarin</option><option>Cantonese</option><option>Taishanese</option>
+        </select>
+      </div>
+      <div class="chip" style="flex:1;min-width:180px"><label>City</label><input type="text" id="cCity" placeholder="e.g. Santa Ana" style="max-width:none;width:100%"></div>
+    </div>
+
+    <div class="quote" id="quoteInterp">
+      <div id="qiLines"></div>
+      <div class="qnote" id="qiNote"></div>
+      <div class="qref" id="qiRef"></div>
+      <div class="actions">
+        <a class="btn gold" id="bookBtn" target="_blank" rel="noopener">Book this date&nbsp;→</a>
+        <a class="btn ghost" id="mailInterp">Email this request</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ TRANSLATION PANEL ============ -->
+  <div class="panel" id="panelTrans">
+    <h2>Instant document quote</h2>
+    <p class="hint">Everything is measured on your device — page count, words, character density, whether pages are typed or scanned. Only the <em>measurements</em> travel with your request; the documents never do.</p>
+
+    <div class="files" id="fileList"></div>
+    <div class="parsing" id="parsingMsg">READING ON YOUR DEVICE…</div>
+    <div style="margin-top:14px"><a class="btn ghost" id="addMore" style="flex:none;display:inline-block;min-width:0;padding:10px 18px">+ Add documents</a></div>
+
+    <p class="hint" style="margin-top:20px;margin-bottom:8px">Anything else we should know? <em>(“certified and notarized”, “need it by Friday”, “into Chinese”…)</em></p>
+    <textarea id="transText" style="min-height:64px" placeholder="Certification, notarization, deadline, direction…" spellcheck="false"></textarea>
+
+    <div class="optrow" id="urgencyRow">
+      <div class="opt sel" data-u="standard"><div class="ot">Standard</div><div class="od">3–5 BUSINESS DAYS</div></div>
+      <div class="opt" data-u="expedited"><div class="ot">Expedited</div><div class="od">48 HOURS</div></div>
+      <div class="opt" data-u="sameday"><div class="ot">Same-day</div><div class="od">TODAY / OVERNIGHT</div></div>
+    </div>
+    <div class="optrow">
+      <div class="opt sel" data-c="certified"><div class="ot">Certified</div><div class="od">SIGNED CERTIFICATE</div></div>
+      <div class="opt" data-c="notarized"><div class="ot">+ Notarized</div><div class="od">NOTARY ACKNOWLEDGMENT</div></div>
+      <div class="opt" data-c="none"><div class="ot">Working copy</div><div class="od">NO CERTIFICATE</div></div>
+    </div>
+
+    <div class="quote" id="quoteTrans">
+      <div id="qtLines"></div>
+      <div class="qnote" id="qtNote"></div>
+      <div class="qref" id="qtRef"></div>
+      <div class="actions">
+        <a class="btn gold" id="mailTrans">Request this quote&nbsp;→</a>
+        <a class="btn ghost" id="bookBtn2" target="_blank" rel="noopener">Booking calendar</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    BILINCO LANGUAGE SERVICES · MONROVIA, CALIFORNIA<br>
+    MANDARIN · CANTONESE · TAISHANESE — COURT-CERTIFIED INTERPRETATION &amp; CERTIFIED TRANSLATION<br>
+    <a href="mailto:info@bilinco.net">INFO@BILINCO.NET</a> · DOCUMENTS ARE PARSED IN YOUR BROWSER AND NEVER UPLOADED
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   BILINCO DROPQUOTE — all parsing and pricing happens in this file,
+   in the client's browser. No document content ever leaves the device.
+   =====================================================================
+
+   RATE CARD — edit these numbers any time; everything below recomputes.
+   Prefilled from BilinCo's 2026 direct-client pricing.               */
+const CONFIG = {
+  bookingUrl: 'https://script.google.com/a/macros/bilinco.net/s/AKfycbwDj7CjO8eJdl5py6v0EF4Nc3Diq715XUIsZqYiZ-OFo17CNL9njmPZX1xXEi5ECLNm/exec',
+  email: 'info@bilinco.net',
+
+  interpretation: {
+    fullDay: 1600,          // one interpreter, per day, on-site
+    halfDay: 900,           // up to 3.5 hours
+    teamFullDay: 3000,      // two-interpreter team, per day
+    remoteHourly: 250,      // remote, per hour
+    remoteMinHours: 2,      // remote minimum billing
+    onsiteFee: 50,          // added when converting a remote rate on-site (informational)
+    travelNote: 'Travel within the LA / Orange County metro is included. Farther venues are quoted separately.'
+  },
+
+  translation: {
+    jobMinimum: 225,        // absolute minimum per engagement
+    perPage: { light: 65, standard: 85, dense: 110 },  // typed source, per page
+    scanMultiplier: 1.5,    // scanned / handwritten pages
+    notarization: 75,       // notarized certificate, flat
+    urgency: { standard: 1, expedited: 1.25, sameday: 1.5 },
+    wordsPerPage: 400,      // normalization for digital text
+    cjkPerPage: 600,        // CJK characters per normalized page
+    rangeSpread: 0.10       // estimate shown as ±10%
+  }
+};
+
+/* ---------- helpers ---------- */
+const $ = id => document.getElementById(id);
+const fmt = n => '$' + Math.round(n).toLocaleString('en-US');
+const esc = s => { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; };
+function refCode(){
+  const d = new Date(), p = n => String(n).padStart(2,'0');
+  return 'DQ-' + d.getFullYear() + p(d.getMonth()+1) + p(d.getDate()) + '-' +
+         Math.random().toString(36).slice(2,6).toUpperCase();
+}
+let bytesLocal = 0;
+function bumpBytes(n){
+  bytesLocal += n;
+  const u = ['B','KB','MB','GB']; let v = bytesLocal, i = 0;
+  while (v >= 1024 && i < u.length-1){ v /= 1024; i++; }
+  $('byteCounter').textContent = (i ? v.toFixed(1) : v) + u[i] + ' · local';
+}
+
+/* ---------- mode switching ---------- */
+const panels = { interp: $('panelInterp'), trans: $('panelTrans') };
+function openMode(which){
+  $('btnInterp').classList.toggle('active', which === 'interp');
+  $('btnTrans').classList.toggle('active', which === 'trans');
+  panels.interp.classList.toggle('open', which === 'interp');
+  panels.trans.classList.toggle('open', which === 'trans');
+  panels[which].scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+$('btnInterp').addEventListener('click', () => openMode('interp'));
+$('btnTrans').addEventListener('click', () => openMode('trans'));
+
+/* =====================================================================
+   INTERPRETATION — natural-language decoding
+   ===================================================================== */
+const SETTINGS = [
+  [/deposition|depo\b/i,'Deposition'], [/trial/i,'Trial'], [/hearing/i,'Hearing'],
+  [/arbitration/i,'Arbitration'], [/mediation/i,'Mediation'],
+  [/\bIME\b|medical exam|doctor|medical/i,'IME / Medical'], [/\bEUO\b/i,'EUO'],
+  [/conference/i,'Conference'], [/meeting|negotiation|business/i,'Business meeting'],
+  [/court/i,'Hearing']
+];
+const WEEKDAYS = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+
+function parseInterp(text){
+  const t = text.toLowerCase();
+  const out = {};
+
+  for (const [re, label] of SETTINGS) if (re.test(text)) { out.setting = label; break; }
+
+  if (/cantonese/i.test(t)) out.lang = 'Cantonese';
+  else if (/taishanese|toishan|hoisan/i.test(t)) out.lang = 'Taishanese';
+  else if (/mandarin|chinese|中文|国语|普通话/i.test(text)) out.lang = 'Mandarin';
+
+  if (/remote|zoom|virtual|video ?conference|teams|webex|by phone|telephonic/i.test(t)) out.mode = 'remote';
+  else if (/in.?person|on.?site|in person/i.test(t)) out.mode = 'onsite';
+
+  if (/full ?day|all ?day|9\s*(?:am)?\s*(?:-|to|–)\s*5|entire day/i.test(t)) out.length = 'full';
+  else if (/half ?day|morning only|afternoon only|\bam only\b|\bpm only\b/i.test(t)) out.length = 'half';
+  else { const h = t.match(/(\d+(?:\.\d+)?)\s*(?:hours?|hrs?)\b/); if (h) out.length = parseFloat(h[1]) > 3.5 ? 'full' : (out.mode === 'remote' ? '2h' : 'half'); }
+
+  if (/two interpreters|2 interpreters|team of (?:two|2)|pair of interpreters/i.test(t)) out.team = '2';
+
+  const days = t.match(/(\d+)\s*(?:consecutive\s*)?days?\b/);
+  if (days && +days[1] > 1 && +days[1] <= 30) out.days = +days[1];
+
+  /* date: tomorrow / next tuesday / 7/22 / july 22 */
+  const now = new Date();
+  const iso = d => d.toISOString().slice(0,10);
+  if (/\btomorrow\b/.test(t)) { const d = new Date(now); d.setDate(d.getDate()+1); out.date = iso(d); }
+  else if (/\btoday\b/.test(t)) out.date = iso(now);
+  else {
+    const wd = t.match(/\b(?:next\s+|this\s+)?(sunday|monday|tuesday|wednesday|thursday|friday|saturday)\b/);
+    const num = t.match(/\b(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?\b/);
+    const mon = t.match(/\b(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sept?|oct|nov|dec)\.?\s+(\d{1,2})(?:st|nd|rd|th)?\b/);
+    if (num){
+      let y = num[3] ? +num[3] : now.getFullYear(); if (y < 100) y += 2000;
+      const d = new Date(y, +num[1]-1, +num[2]);
+      if (!num[3] && d < now) d.setFullYear(d.getFullYear()+1);
+      if (!isNaN(d)) out.date = iso(d);
+    } else if (mon){
+      const names = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+      const mi = names.indexOf(mon[1].slice(0,3));
+      const d = new Date(now.getFullYear(), mi, +mon[2]);
+      if (d < now) d.setFullYear(d.getFullYear()+1);
+      out.date = iso(d);
+    } else if (wd){
+      const target = WEEKDAYS.indexOf(wd[1]);
+      const d = new Date(now);
+      let add = (target - d.getDay() + 7) % 7; if (add === 0) add = 7;
+      d.setDate(d.getDate()+add);
+      out.date = iso(d);
+    }
+  }
+
+  const tm = t.match(/\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/);
+  if (tm){
+    let h = +tm[1] % 12; if (tm[3] === 'pm') h += 12;
+    out.time = String(h).padStart(2,'0') + ':' + (tm[2] || '00');
+  }
+
+  const city = text.match(/\b(?:in|at|near)\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+){0,2})(?=[\s,.;]|$)/);
+  if (city){
+    const c = city[1].replace(/\s+(?:on|at|next|this|for|court(?:house)?)$/i,'').trim();
+    if (c && !WEEKDAYS.includes(c.toLowerCase()) && !/^(the|a|an|person|zoom)$/i.test(c)) out.city = c;
+  }
+  return out;
+}
+
+function applyInterpParse(){
+  const p = parseInterp($('interpText').value);
+  if (p.setting) $('cSetting').value = p.setting;
+  if (p.lang)    $('cLang').value = p.lang;
+  if (p.mode)    $('cMode').value = p.mode;
+  if (p.length)  $('cLength').value = p.length;
+  if (p.team)    $('cTeam').value = p.team;
+  if (p.days)    $('cDays').value = p.days;
+  if (p.date)    $('cDate').value = p.date;
+  if (p.time)    $('cTime').value = p.time;
+  if (p.city)    $('cCity').value = p.city;
+  if (p.mode === 'remote' && !p.length) $('cLength').value = '2h';
+  quoteInterp();
+}
+
+let interpRef = null;
+function quoteInterp(){
+  const I = CONFIG.interpretation;
+  const days = Math.max(1, +$('cDays').value || 1);
+  const team = $('cTeam').value === '2';
+  const len  = $('cLength').value;
+  const remote = $('cMode').value === 'remote';
+  const lines = [];
+  let perDay;
+
+  if (remote && len === '2h'){
+    perDay = I.remoteHourly * I.remoteMinHours;
+    lines.push([`Remote interpretation — ${I.remoteMinHours}h minimum @ ${fmt(I.remoteHourly)}/h`, fmt(perDay)]);
+  } else if (len === 'half'){
+    perDay = team ? Math.round(I.teamFullDay * (I.halfDay / I.fullDay)) : I.halfDay;
+    lines.push([`Half day (≤3.5h)${team ? ' — two-interpreter team' : ''}`, fmt(perDay)]);
+  } else {
+    perDay = team ? I.teamFullDay : I.fullDay;
+    lines.push([`Full day${team ? ' — two-interpreter team' : ''}`, fmt(perDay)]);
+  }
+  if (days > 1) lines.push([`× ${days} days`, fmt(perDay * days)]);
+
+  const total = perDay * days;
+  const setting = $('cSetting').value, lang = $('cLang').value;
+  const when = $('cDate').value ? new Date($('cDate').value + 'T12:00:00')
+    .toLocaleDateString('en-US',{weekday:'long', month:'long', day:'numeric'}) : 'date TBD';
+
+  let html = `<div class="qline"><span class="l">${esc(lang)} · ${esc(setting)} · ${esc(when)}${$('cCity').value ? ' · ' + esc($('cCity').value) : ''}</span><span class="r"></span></div>`;
+  for (const [l,r] of lines) html += `<div class="qline"><span class="l">${l}</span><span class="r">${r}</span></div>`;
+  html += `<div class="qline total"><span class="l">Estimated fee</span><span class="r">${fmt(total)}</span></div>`;
+  $('qiLines').innerHTML = html;
+  $('qiNote').textContent = (remote ? '' : I.travelNote + ' ') +
+    'This is an instant estimate. Your date is only secured once confirmed on the calendar — availability moves fast.';
+  interpRef = interpRef || refCode();
+  $('qiRef').textContent = 'REFERENCE ' + interpRef;
+  $('quoteInterp').classList.add('show');
+
+  $('bookBtn').href = CONFIG.bookingUrl;
+  const body =
+`INTERPRETATION REQUEST ${interpRef}
+
+Setting:   ${setting}
+Language:  ${lang}
+Date:      ${$('cDate').value || 'TBD'}  ${$('cTime').value || ''}
+Length:    ${len === 'full' ? 'Full day' : len === 'half' ? 'Half day' : 'Remote (2h min)'} × ${days} day(s)
+Team:      ${team ? 'Two interpreters' : 'One interpreter'}
+Mode:      ${remote ? 'Remote' : 'In person'}${$('cCity').value ? '\nCity:      ' + $('cCity').value : ''}
+Estimate:  ${fmt(total)}
+
+As described:
+${$('interpText').value || '(typed details above)'}
+`;
+  $('mailInterp').href = 'mailto:' + CONFIG.email +
+    '?subject=' + encodeURIComponent(`Interpretation booking ${interpRef} — ${setting}, ${when}`) +
+    '&body=' + encodeURIComponent(body);
+}
+
+let interpTimer;
+$('interpText').addEventListener('input', () => { clearTimeout(interpTimer); interpTimer = setTimeout(applyInterpParse, 450); });
+for (const id of ['cSetting','cDate','cTime','cLength','cDays','cTeam','cMode','cLang','cCity'])
+  $(id).addEventListener('change', quoteInterp);
+
+/* =====================================================================
+   TRANSLATION — local document analysis
+   ===================================================================== */
+const state = { files: [], urgency: 'standard', cert: 'certified' };
+const CJK_RE = /[㐀-鿿豈-﫿]/g;
+
+function loadScript(sources){
+  return new Promise((resolve, reject) => {
+    const tryNext = i => {
+      if (i >= sources.length) return reject(new Error('script unavailable'));
+      const s = document.createElement('script');
+      s.src = sources[i];
+      s.onload = () => resolve(sources[i]);
+      s.onerror = () => { s.remove(); tryNext(i+1); };
+      document.head.appendChild(s);
+    };
+    tryNext(0);
+  });
+}
+let pdfjsPromise = null;
+function loadPdfjs(){
+  if (pdfjsPromise) return pdfjsPromise;
+  pdfjsPromise = loadScript([
+    'vendor/pdf.min.js',
+    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js'
+  ]).then(src => {
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc = src.startsWith('vendor')
+      ? 'vendor/pdf.worker.min.js'
+      : 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    return window.pdfjsLib;
+  });
+  return pdfjsPromise;
+}
+let zipPromise = null;
+function loadZip(){
+  if (zipPromise) return zipPromise;
+  zipPromise = loadScript([
+    'vendor/jszip.min.js',
+    'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js'
+  ]).then(() => window.JSZip);
+  return zipPromise;
+}
+
+function textStats(str){
+  const cjk = (str.match(CJK_RE) || []).length;
+  const words = (str.replace(CJK_RE,' ').match(/[A-Za-z0-9'’\-]+/g) || []).length;
+  return { words, cjk };
+}
+
+async function analyzeFile(file){
+  const rec = { file, name: file.name, size: file.size, pages: 0, words: 0, cjk: 0,
+                scanPages: 0, kind: 'other', note: '', userScan: false, error: null };
+  const ext = (file.name.split('.').pop() || '').toLowerCase();
+  try {
+    if (ext === 'pdf'){
+      rec.kind = 'pdf';
+      const pdfjs = await loadPdfjs();
+      const buf = await file.arrayBuffer();
+      const doc = await pdfjs.getDocument({ data: buf }).promise;
+      rec.pages = doc.numPages;
+      for (let i = 1; i <= doc.numPages; i++){
+        const page = await doc.getPage(i);
+        const tc = await page.getTextContent();
+        const str = tc.items.map(it => it.str).join(' ');
+        const { words, cjk } = textStats(str);
+        rec.words += words; rec.cjk += cjk;
+        if (str.replace(/\s/g,'').length < 12) rec.scanPages++;   // image-only page
+      }
+      try { doc.destroy(); } catch(e){}
+    } else if (ext === 'docx'){
+      rec.kind = 'docx';
+      const JSZip = await loadZip();
+      const zip = await JSZip.loadAsync(await file.arrayBuffer());
+      const xml = await zip.file('word/document.xml').async('string');
+      const text = xml.replace(/<w:p\b[^>]*>/g,'\n').replace(/<[^>]+>/g,'');
+      const { words, cjk } = textStats(text);
+      rec.words = words; rec.cjk = cjk;
+      rec.pages = Math.max(1, Math.ceil(words / CONFIG.translation.wordsPerPage + cjk / CONFIG.translation.cjkPerPage));
+      rec.note = 'length estimated from text volume';
+    } else if (['txt','md','rtf'].includes(ext)){
+      rec.kind = 'text';
+      let text = await file.text();
+      if (ext === 'rtf') text = text.replace(/\\[a-z]+-?\d* ?|[{}]/g,'');
+      const { words, cjk } = textStats(text);
+      rec.words = words; rec.cjk = cjk;
+      rec.pages = Math.max(1, Math.ceil(words / CONFIG.translation.wordsPerPage + cjk / CONFIG.translation.cjkPerPage));
+      rec.note = 'length estimated from text volume';
+    } else if (['png','jpg','jpeg','webp','tif','tiff','heic','bmp'].includes(ext)){
+      rec.kind = 'image';
+      rec.pages = 1; rec.scanPages = 1;
+      rec.note = 'image — treated as one scanned page';
+    } else {
+      rec.kind = 'other';
+      rec.pages = Math.max(1, Math.round(file.size / 30000));
+      rec.note = 'format not readable locally — pages estimated from size';
+    }
+  } catch (err){
+    rec.error = String(err.message || err);
+    if (!rec.pages) rec.pages = Math.max(1, Math.round(file.size / 30000));
+    rec.note = 'could not fully read locally — pages estimated from size';
+  }
+  bumpBytes(file.size);
+  return rec;
+}
+
+function densityOf(rec){
+  const textPages = rec.pages - rec.scanPages;
+  if (textPages <= 0) return 'standard';
+  const perPage = (rec.words + rec.cjk / 1.5) / textPages;
+  if (perPage < 220) return 'light';
+  if (perPage > 480) return 'dense';
+  return 'standard';
+}
+
+function renderFiles(){
+  const box = $('fileList');
+  box.innerHTML = '';
+  state.files.forEach((rec, i) => {
+    const scans = rec.userScan ? rec.pages : rec.scanPages;
+    const density = densityOf(rec);
+    const el = document.createElement('div');
+    el.className = 'fcard';
+    el.innerHTML = `
+      <div style="flex:1;min-width:200px">
+        <div class="name">${esc(rec.name)}</div>
+        <div class="meta">${rec.pages} page${rec.pages !== 1 ? 's' : ''}
+          ${rec.words ? ' · ' + rec.words.toLocaleString() + ' words' : ''}
+          ${rec.cjk ? ' · ' + rec.cjk.toLocaleString() + ' 汉字' : ''}
+          ${scans ? ' · ' + scans + ' scanned' : ''}
+          ${rec.note ? ' · ' + esc(rec.note) : ''}</div>
+        <label class="scanflag" style="margin-top:7px"><input type="checkbox" data-i="${i}" ${rec.userScan ? 'checked' : ''}> handwritten / hard-to-read original</label>
+      </div>
+      <span class="badge ${scans === rec.pages && rec.pages > 0 ? 'scan' : ''}">${scans === rec.pages && rec.pages > 0 ? 'SCAN' : density.toUpperCase()}</span>
+      <button class="rm" data-i="${i}" aria-label="Remove file">×</button>`;
+    box.appendChild(el);
+  });
+  box.querySelectorAll('.rm').forEach(b => b.addEventListener('click', () => {
+    state.files.splice(+b.dataset.i, 1); renderFiles(); quoteTrans();
+  }));
+  box.querySelectorAll('.scanflag input').forEach(b => b.addEventListener('change', () => {
+    state.files[+b.dataset.i].userScan = b.checked; renderFiles(); quoteTrans();
+  }));
+}
+
+function parseTransNotes(){
+  const t = $('transText').value.toLowerCase();
+  if (/notari[zs]/.test(t)) setOpt('c','notarized');
+  else if (/certif/.test(t) && state.cert === 'none') setOpt('c','certified');
+  if (/same.?day|today|tonight|overnight|asap|right away|urgent/.test(t)) setOpt('u','sameday');
+  else if (/rush|48 ?hours|two days|2 days|expedit|tomorrow/.test(t)) setOpt('u','expedited');
+}
+
+let transRef = null;
+function quoteTrans(){
+  if (!state.files.length){ $('quoteTrans').classList.remove('show'); return; }
+  const T = CONFIG.translation;
+  let textCost = 0, scanCost = 0, textPages = 0, scanPages = 0;
+
+  for (const rec of state.files){
+    const scans = rec.userScan ? rec.pages : rec.scanPages;
+    const texts = rec.pages - scans;
+    const rate = T.perPage[densityOf(rec)];
+    textCost += texts * rate;
+    scanCost += scans * T.perPage.standard * T.scanMultiplier;
+    textPages += texts; scanPages += scans;
+  }
+
+  const lines = [];
+  if (textPages) lines.push([`Typed pages × ${textPages}`, fmt(textCost)]);
+  if (scanPages) lines.push([`Scanned / handwritten pages × ${scanPages} (×${T.scanMultiplier})`, fmt(scanCost)]);
+  let subtotal = textCost + scanCost;
+
+  if (state.cert === 'notarized'){ lines.push(['Notarized certificate of accuracy', fmt(T.notarization)]); subtotal += T.notarization; }
+  else if (state.cert === 'certified') lines.push(['Certificate of accuracy', 'included']);
+
+  const mult = T.urgency[state.urgency];
+  if (mult > 1){ const up = subtotal * (mult - 1); lines.push([`${state.urgency === 'sameday' ? 'Same-day' : 'Expedited'} delivery (×${mult})`, '+' + fmt(up).slice(1)]); subtotal *= mult; }
+
+  let minApplied = false;
+  if (subtotal < T.jobMinimum){ subtotal = T.jobMinimum; minApplied = true; }
+
+  const lo = subtotal * (1 - T.rangeSpread), hi = subtotal * (1 + T.rangeSpread);
+
+  let html = '';
+  for (const [l,r] of lines) html += `<div class="qline"><span class="l">${l}</span><span class="r">${r}</span></div>`;
+  if (minApplied) html += `<div class="qline"><span class="l">Job minimum applied</span><span class="r">${fmt(T.jobMinimum)}</span></div>`;
+  html += `<div class="qline total"><span class="l">Estimated total</span><span class="r">${minApplied ? fmt(subtotal) : fmt(lo) + ' – ' + fmt(hi)}</span></div>`;
+  $('qtLines').innerHTML = html;
+  $('qtNote').textContent = 'Instant estimate from on-device measurements. A firm quote is confirmed by a human — usually within the hour, always before any work begins.';
+  transRef = transRef || refCode();
+  $('qtRef').textContent = 'REFERENCE ' + transRef;
+  $('quoteTrans').classList.add('show');
+
+  const manifest = state.files.map(r =>
+    `- ${r.name}: ${r.pages}p, ${r.words}w, ${r.cjk}cjk, ${(r.userScan ? r.pages : r.scanPages)} scanned, ${densityOf(r)}`).join('\n');
+  const body =
+`TRANSLATION QUOTE REQUEST ${transRef}
+
+Files measured locally (documents NOT attached — please reply and we'll arrange secure delivery):
+${manifest}
+
+Service:   ${state.cert === 'notarized' ? 'Certified + notarized' : state.cert === 'certified' ? 'Certified' : 'Working copy'}
+Delivery:  ${state.urgency}
+Estimate:  ${minApplied ? fmt(subtotal) : fmt(lo) + ' – ' + fmt(hi)}
+
+Notes:
+${$('transText').value || '(none)'}
+`;
+  $('mailTrans').href = 'mailto:' + CONFIG.email +
+    '?subject=' + encodeURIComponent(`Translation quote ${transRef} — ${state.files.length} file(s), ${textPages + scanPages} pages`) +
+    '&body=' + encodeURIComponent(body);
+  $('bookBtn2').href = CONFIG.bookingUrl;
+}
+
+function setOpt(group, val){
+  const attr = group === 'u' ? 'u' : 'c';
+  document.querySelectorAll(`.opt[data-${attr}]`).forEach(o =>
+    o.classList.toggle('sel', o.dataset[attr] === val));
+  if (group === 'u') state.urgency = val; else state.cert = val;
+  quoteTrans();
+}
+document.querySelectorAll('.opt').forEach(o => o.addEventListener('click', () =>
+  setOpt(o.dataset.u ? 'u' : 'c', o.dataset.u || o.dataset.c)));
+
+let transTimer;
+$('transText').addEventListener('input', () => { clearTimeout(transTimer); transTimer = setTimeout(parseTransNotes, 450); });
+
+/* ---------- file intake ---------- */
+async function takeFiles(fileList){
+  const files = [...fileList];
+  if (!files.length) return;
+  openMode('trans');
+  $('parsingMsg').classList.add('show');
+  for (const f of files){
+    const rec = await analyzeFile(f);
+    state.files.push(rec);
+    renderFiles();
+  }
+  $('parsingMsg').classList.remove('show');
+  quoteTrans();
+}
+
+const dz = $('dropzone');
+dz.addEventListener('click', () => $('fileInput').click());
+dz.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('fileInput').click(); } });
+$('addMore').addEventListener('click', () => $('fileInput').click());
+$('fileInput').addEventListener('change', e => { takeFiles(e.target.files); e.target.value = ''; });
+
+for (const ev of ['dragover','dragenter'])
+  document.addEventListener(ev, e => { e.preventDefault(); dz.classList.add('drag'); });
+for (const ev of ['dragleave','drop'])
+  document.addEventListener(ev, e => { e.preventDefault(); if (ev === 'drop' || e.target === document.documentElement) dz.classList.remove('drag'); });
+document.addEventListener('drop', e => { if (e.dataTransfer && e.dataTransfer.files.length) takeFiles(e.dataTransfer.files); });
+</script>
+</body>
+</html>
